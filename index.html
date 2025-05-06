@@ -1,11 +1,62 @@
 <!DOCTYPE html>
-<html>
-  <head><title>Testside</title></head>
-  <body>
-    <h1 style="color:white; background:black; padding:2em;">
-      🚀 Testside for Wisent 3D
-    </h1>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wisent 3D Viewer</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #111;
+    }
+    #api-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ✅ Sketchfab 3D Viewer iframe -->
+<iframe
+  id="api-frame"
+  src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1&ui_watermark=0"
+  allow="autoplay; fullscreen; xr-spatial-tracking"
+  allowfullscreen>
+</iframe>
+
+<!-- ✅ Sketchfab Viewer API -->
+<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
+<script>
+  const iframe = document.getElementById('api-frame');
+  const client = new Sketchfab(iframe);
+
+  client.init('45311f1c3626462784cd84ec40a82f4b', {
+    success: function (api) {
+      api.start();
+      api.addEventListener('viewerready', function () {
+        console.log('✅ Sketchfab-modellen er klar!');
+
+        // Vis alle noder i konsoll
+        api.getNodeMap((err, nodes) => {
+          if (err) {
+            console.error('Feil ved henting av noder');
+          } else {
+            console.log('🧩 Deler i modellen:');
+            Object.values(nodes).forEach(n => console.log(n.name));
+          }
+        });
+      });
+    },
+    error: function () {
+      alert('❌ Klarte ikke å laste Sketchfab-modellen.');
+    }
+  });
+</script>
+
+</body>
 </html>
+
 
 
