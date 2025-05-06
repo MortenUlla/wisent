@@ -2,90 +2,55 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Leopard 2 MBT Revolution – Interaktiv 3D</title>
-
-  <!-- ----------  STIL  ----------- -->
+  <title>Wisent 3D Viewer</title>
   <style>
-    html,body{margin:0;height:100%;font-family:sans-serif;background:#111;color:#eee;}
-    #viewer  {position:fixed;top:0;left:250px;right:0;bottom:0;border:none;}
-    #sidebar {position:fixed;top:0;left:0;width:250px;bottom:0;background:#1e1e1e;
-              overflow-y:auto;padding:15px;box-sizing:border-box}
-    #sidebar h2{margin:0 0 10px;font-size:18px}
-    .nodeItem{display:flex;align-items:center;margin:4px 0;font-size:14px}
-    .nodeItem input{margin-right:6px;cursor:pointer}
-    .tooltip{position:fixed;bottom:15px;left:270px;background:#222;
-             padding:8px 12px;border-radius:6px;display:none;max-width:260px}
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #111;
+    }
+    #api-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
   </style>
 </head>
 <body>
 
-<!-- ----------  SIDEBAR  ----------- -->
-<div id="sidebar">
-  <h2>Deler i modellen</h2>
-  <div id="nodeList">Laster …</div>
-</div>
+<!-- ✅ Sketchfab 3D Viewer -->
+<iframe
+  id="api-frame"
+  src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_controls=1&ui_infos=0"
+  allow="autoplay; fullscreen; xr-spatial-tracking"
+  allowfullscreen>
+</iframe>
 
-<!-- ----------  SKETCHFAB VIEWER  ----------- -->
-<iframe id="viewer"
-        src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1&ui_watermark=0"
-        allow="autoplay; fullscreen; xr-spatial-tracking"></iframe>
-
-<div id="tooltip" class="tooltip"></div>
-
-<!-- ----------  SCRIPT  ----------- -->
+<!-- Sketchfab Viewer API -->
 <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
 <script>
-const iframe = document.getElementById('viewer');
-const client = new Sketchfab(iframe);
-const nodeListDiv = document.getElementById('nodeList');
-const tooltip = document.getElementById('tooltip');
+  const iframe = document.getElementById('api-frame');
+  const client = new Sketchfab(iframe);
 
-client.init('45311f1c3626462784cd84ec40a82f4b', {
-  success: (api) => {
-    api.start();
-    api.addEventListener('viewerready', () => {
-      /* --- 1. Hent alle noder --- */
-      api.getNodeMap((err, nodes) => {
-        if (err) { nodeListDiv.textContent = 'Kunne ikke hente noder'; return; }
+  client.init('45311f1c3626462784cd84ec40a82f4b', {
+    success: function (api) {
+      api.start();
+      api.addEventListener('viewerready', function () {
+        console.log('✅ Sketchfab-modellen er klar!');
 
-        // gjør array av nodene og sorter alfabetisk
-        const parts = Object.values(nodes)
-                      .filter(n => n.type === 'MatrixTransform') // kun geometrinoder
-                      .sort((a,b)=>a.name.localeCompare(b.name));
-
-        /* --- 2. Bygg liste med brytere --- */
-        nodeListDiv.innerHTML = '';
-        parts.forEach(node => {
-          const row = document.createElement('div');
-          row.className = 'nodeItem';
-
-          const chk = document.createElement('input');
-          chk.type  = 'checkbox';
-          chk.checked = true;              // alle deler synlige som start
-          chk.addEventListener('change', () => {
-            api.setVisibility(node.instanceID, chk.checked);
-          });
-
-          const label = document.createElement('label');
-          label.textContent = node.name || '(uten navn)';
-          label.style.cursor='pointer';
-          label.onclick = () => {
-            // 3. Fokuser kamera kort & vis tooltip
-            api.lookAt(node.boundingBox.center, {animation:1});
-            tooltip.textContent = node.name;
-            tooltip.style.display='block';
-            setTimeout(()=>tooltip.style.display='none', 3000);
-          };
-
-          row.appendChild(chk);
-          row.appendChild(label);
-          nodeListDiv.appendChild(row);
+        // Få alle delnavn
+        api.getNodeMap((err, nodes) => {
+          if (err) return console.error('Feil ved henting av noder');
+          console.log('🧩 Deler i modellen:', Object.values(nodes).map(n => n.name));
         });
       });
-    });
-  },
-  error: () => alert('Feil: kunne ikke laste Sketchfab‑modellen')
-});
+    },
+    error: function () {
+      alert('❌ Klarte ikke å laste modellen.');
+    }
+  });
 </script>
+
 </body>
 </html>
+
