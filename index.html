@@ -1,87 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
   <meta charset="UTF-8">
-  <title>Leopard 2A6 – Interaktiv 3D</title>
+  <title>WISENT ARV – Interaktiv 3D</title>
   <style>
-    html, body { margin:0; height:100%; background:#111; }
-    #api-frame { width:100%; height:100%; border:none; }
+    html, body { margin:0; height:100%; background:#111; overflow:hidden; }
+    #viewer { position:absolute; top:0; left:300px; right:0; bottom:0; border:none; }
     #controls {
-      position: absolute;
-      top: 10px; left: 10px;
-      background: rgba(0,0,0,0.5);
-      padding: 10px; border-radius: 6px;
-      color: #fff; font-family: sans-serif;
+      position:absolute; top:10px; left:10px;
+      width:280px; background:rgba(30,30,30,0.9); padding:15px;
+      border-radius:6px; color:#eee; font-family:sans-serif;
     }
-    #controls button { margin: 4px; padding: 6px 12px; }
+    #controls h2 { margin:0 0 10px; font-size:18px; }
+    #controls button {
+      display:block; width:100%; margin:6px 0; padding:8px;
+      background:#1CAAD9; border:none; color:white; font-size:14px;
+      cursor:pointer; border-radius:4px;
+    }
+    #tooltip {
+      position:absolute; bottom:10px; left:310px;
+      background:rgba(0,0,0,0.8); color:#fff; padding:8px 12px;
+      border-radius:4px; font-size:14px; display:none;
+    }
   </style>
 </head>
 <body>
 
-  <!-- 3D-viewer fra Sketchfab -->
-  <iframe id="api-frame"
-    src="https://sketchfab.com/models/b62ba39ae5584b768b53d58803c3cc4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1"
+  <!-- Kontrollpanel -->
+  <div id="controls">
+    <h2>Interaktiv kontroll</h2>
+    <button onclick="toggleNode('Hatch_Main')">Åpne/Lukk hovedluke</button>
+    <button onclick="toggleNode('Hatch_Side')">Åpne/Lukk sidesluker</button>
+    <button onclick="focusOn('Turret')">Fokus på tårn</button>
+    <button onclick="toggleNode('Winch')">Vis/Skjul vinsj</button>
+  </div>
+
+  <!-- Tooltips -->
+  <div id="tooltip"></div>
+
+  <!-- Sketchfab Viewer -->
+  <iframe id="viewer"
+    src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1"
     allow="autoplay; fullscreen"
     allowfullscreen>
   </iframe>
 
-  <!-- Kontroll-panel -->
-  <div id="controls">
-    <button onclick="focusOn('turret')">Fokuser tårn</button>
-    <button onclick="toggleNode('hatch')">Åpne/lukk luke</button>
-    <button onclick="toggleNode('winch')">Vis/skjul vinsj</button>
-  </div>
-
-  <!-- Sketchfab Viewer API -->
+  <!-- API-skript -->
   <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
   <script>
-    const iframe = document.getElementById('api-frame');
-    const client = new Sketchfab(iframe);
-
+    const iframe = document.getElementById('viewer');
+    const tooltip = document.getElementById('tooltip');
     let apiInstance;
-    client.init('b62ba39ae5584b768b53d58803c3cc4b', {
-      success: (api) => {
+
+    new Sketchfab(iframe).init('45311f1c3626462784cd84ec40a82f4b', {
+      success: function(api) {
         apiInstance = api;
-        api.start(() => {
-          console.log('✅ Viewer klar!');
-          // Hent og logg node-liste én gang
-          api.getNodeMap((err, nodes) => {
-            if (!err) {
-              console.log('🧩 Noder:', Object.values(nodes).map(n=>n.name));
-            }
-          });
+        api.start();
+        api.addEventListener('viewerready', () => {
+          console.log('Viewer klar – nå kan du styre deler!');
         });
       },
-      error: () => alert('❌ Kunne ikke laste 3D-modellen')
+      error: function() {
+        alert('Kunne ikke laste 3D-modellen.');
+      }
     });
 
-    // Zoom/fokuser kamera på navngitt node (partial match)
-    function focusOn(partName) {
+    // Åpne/lukke en node (hatch, winch osv.)
+    function toggleNode(partName) {
       apiInstance.getNodeMap((err, nodes) => {
-        if (err) return;
         const node = Object.values(nodes)
-          .find(n => n.name.toLowerCase().includes(partName));
-        if (!node) return alert('Fant ikke del: ' + partName);
-        apiInstance.lookAt(node.boundingBox.center, { animation: 1 });
+          .find(n => n.name.toLowerCase().includes(partName.toLowerCase()));
+        if (!node) return showTip('Fant ikke del: ' + partName);
+        apiInstance.getVisibility(node.instanceID, (e, vis) => {
+          apiInstance.setVisibility(node.instanceID, !vis);
+          showTip((!vis ? 'Viser ' : 'Skjuler ') + node.name);
+        });
       });
     }
 
-    // Vis/skjul navngitt node
-    function toggleNode(partName) {
+    // Fokuser kamera på en node
+    function focusOn(partName) {
       apiInstance.getNodeMap((err, nodes) => {
-        if (err) return;
         const node = Object.values(nodes)
-          .find(n => n.name.toLowerCase().includes(partName));
-        if (!node) return alert('Fant ikke del: ' + partName);
-        apiInstance.getVisibility(node.instanceID, (e, visible) => {
-          apiInstance.setVisibility(node.instanceID, !visible);
-        });
+          .find(n => n.name.toLowerCase().includes(partName.toLowerCase()));
+        if (!node) return showTip('Fant ikke del: ' + partName);
+        apiInstance.lookAt(node.boundingBox.center, { animation:1 });
+        showTip('Fokuserer på ' + node.name);
       });
+    }
+
+    // Vis tooltip
+    function showTip(text) {
+      tooltip.textContent = text;
+      tooltip.style.display = 'block';
+      clearTimeout(tooltip._timer);
+      tooltip._timer = setTimeout(() => tooltip.style.display = 'none', 2500);
     }
   </script>
 
 </body>
 </html>
+
 
 
 
