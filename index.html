@@ -29,77 +29,65 @@
   <!-- Kontrollpanel -->
   <div id="controls">
     <h2>Interaktiv kontroll</h2>
-    <button onclick="toggleNode('Hatch_Main')">Åpne/Lukk hovedluke</button>
-    <button onclick="toggleNode('Hatch_Side')">Åpne/Lukk sidesluker</button>
-    <button onclick="focusOn('Turret')">Fokus på tårn</button>
-    <button onclick="toggleNode('Winch')">Vis/Skjul vinsj</button>
+    <button onclick="toggleNode('hatch')">Åpne/Lukk luke</button>
+    <button onclick="toggleNode('winch')">Vis/Skjul vinsj</button>
+    <button onclick="focusOn('turret')">Fokus på tårn</button>
   </div>
 
-  <!-- Tooltips -->
+  <!-- Tooltip -->
   <div id="tooltip"></div>
 
-  <!-- Sketchfab Viewer -->
+  <!-- 3D-viewer -->
   <iframe id="viewer"
-    src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1"
+    src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_controls=1&ui_infos=0"
     allow="autoplay; fullscreen"
     allowfullscreen>
   </iframe>
 
-  <!-- API-skript -->
   <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
   <script>
-    const iframe = document.getElementById('viewer');
-    const tooltip = document.getElementById('tooltip');
-    let apiInstance;
+    let api;
+    const tip = document.getElementById('tooltip');
 
-    new Sketchfab(iframe).init('45311f1c3626462784cd84ec40a82f4b', {
-      success: function(api) {
-        apiInstance = api;
-        api.start();
-        api.addEventListener('viewerready', () => {
-          console.log('Viewer klar – nå kan du styre deler!');
+    new Sketchfab(document.getElementById('viewer')).init('45311f1c3626462784cd84ec40a82f4b', {
+      success: (s) => {
+        api = s;
+        api.start(() => {
+          console.log('Viewer klar');
+          api.getNodeMap((e, nodes) => console.log('Noder:', Object.values(nodes).map(n=>n.name)));
         });
       },
-      error: function() {
-        alert('Kunne ikke laste 3D-modellen.');
-      }
+      error: () => alert('Kunne ikke laste modellen')
     });
 
-    // Åpne/lukke en node (hatch, winch osv.)
-    function toggleNode(partName) {
-      apiInstance.getNodeMap((err, nodes) => {
-        const node = Object.values(nodes)
-          .find(n => n.name.toLowerCase().includes(partName.toLowerCase()));
-        if (!node) return showTip('Fant ikke del: ' + partName);
-        apiInstance.getVisibility(node.instanceID, (e, vis) => {
-          apiInstance.setVisibility(node.instanceID, !vis);
-          showTip((!vis ? 'Viser ' : 'Skjuler ') + node.name);
+    function toggleNode(namePart) {
+      api.getNodeMap((e,nodes) => {
+        const node = Object.values(nodes).find(n => n.name.toLowerCase().includes(namePart));
+        if (!node) return showTip('Fant ikke: '+namePart);
+        api.getVisibility(node.instanceID, (err, vis) => {
+          api.setVisibility(node.instanceID, !vis);
+          showTip((vis ? 'Skjuler ' : 'Viser ')+node.name);
         });
       });
     }
-
-    // Fokuser kamera på en node
-    function focusOn(partName) {
-      apiInstance.getNodeMap((err, nodes) => {
-        const node = Object.values(nodes)
-          .find(n => n.name.toLowerCase().includes(partName.toLowerCase()));
-        if (!node) return showTip('Fant ikke del: ' + partName);
-        apiInstance.lookAt(node.boundingBox.center, { animation:1 });
-        showTip('Fokuserer på ' + node.name);
+    function focusOn(namePart) {
+      api.getNodeMap((e,nodes) => {
+        const node = Object.values(nodes).find(n => n.name.toLowerCase().includes(namePart));
+        if (!node) return showTip('Fant ikke: '+namePart);
+        api.lookAt(node.boundingBox.center,{animation:1});
+        showTip('Fokuserer på '+node.name);
       });
     }
-
-    // Vis tooltip
-    function showTip(text) {
-      tooltip.textContent = text;
-      tooltip.style.display = 'block';
-      clearTimeout(tooltip._timer);
-      tooltip._timer = setTimeout(() => tooltip.style.display = 'none', 2500);
+    function showTip(txt) {
+      tip.textContent = txt;
+      tip.style.display = 'block';
+      clearTimeout(tip.timer);
+      tip.timer = setTimeout(()=>tip.style.display='none',2000);
     }
   </script>
-
 </body>
 </html>
+
 
 
 
