@@ -1,92 +1,23 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WISENT ARV – Interaktiv 3D</title>
+  <title>Wisent ARV 3D Viewer</title>
   <style>
-    html, body { margin:0; height:100%; background:#111; overflow:hidden; }
-    #viewer { position:absolute; top:0; left:300px; right:0; bottom:0; border:none; }
-    #controls {
-      position:absolute; top:10px; left:10px;
-      width:280px; background:rgba(30,30,30,0.9); padding:15px;
-      border-radius:6px; color:#eee; font-family:sans-serif;
-    }
-    #controls h2 { margin:0 0 10px; font-size:18px; }
-    #controls button {
-      display:block; width:100%; margin:6px 0; padding:8px;
-      background:#1CAAD9; border:none; color:white; font-size:14px;
-      cursor:pointer; border-radius:4px;
-    }
-    #tooltip {
-      position:absolute; bottom:10px; left:310px;
-      background:rgba(0,0,0,0.8); color:#fff; padding:8px 12px;
-      border-radius:4px; font-size:14px; display:none;
-    }
+    html, body { margin:0; padding:0; height:100%; overflow:hidden; }
+    iframe { border:0; width:100%; height:100%; }
   </style>
 </head>
 <body>
-
-  <!-- Kontrollpanel -->
-  <div id="controls">
-    <h2>Interaktiv kontroll</h2>
-    <button onclick="toggleNode('hatch')">Åpne/Lukk luke</button>
-    <button onclick="toggleNode('winch')">Vis/Skjul vinsj</button>
-    <button onclick="focusOn('turret')">Fokus på tårn</button>
-  </div>
-
-  <!-- Tooltip -->
-  <div id="tooltip"></div>
-
-  <!-- 3D-viewer -->
-  <iframe id="viewer"
+  <!-- Embed Sketchfab-modellen med Viewer API -->
+  <iframe
     src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_controls=1&ui_infos=0"
     allow="autoplay; fullscreen"
     allowfullscreen>
   </iframe>
-
-  <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
-  <script>
-    let api;
-    const tip = document.getElementById('tooltip');
-
-    new Sketchfab(document.getElementById('viewer')).init('45311f1c3626462784cd84ec40a82f4b', {
-      success: (s) => {
-        api = s;
-        api.start(() => {
-          console.log('Viewer klar');
-          api.getNodeMap((e, nodes) => console.log('Noder:', Object.values(nodes).map(n=>n.name)));
-        });
-      },
-      error: () => alert('Kunne ikke laste modellen')
-    });
-
-    function toggleNode(namePart) {
-      api.getNodeMap((e,nodes) => {
-        const node = Object.values(nodes).find(n => n.name.toLowerCase().includes(namePart));
-        if (!node) return showTip('Fant ikke: '+namePart);
-        api.getVisibility(node.instanceID, (err, vis) => {
-          api.setVisibility(node.instanceID, !vis);
-          showTip((vis ? 'Skjuler ' : 'Viser ')+node.name);
-        });
-      });
-    }
-    function focusOn(namePart) {
-      api.getNodeMap((e,nodes) => {
-        const node = Object.values(nodes).find(n => n.name.toLowerCase().includes(namePart));
-        if (!node) return showTip('Fant ikke: '+namePart);
-        api.lookAt(node.boundingBox.center,{animation:1});
-        showTip('Fokuserer på '+node.name);
-      });
-    }
-    function showTip(txt) {
-      tip.textContent = txt;
-      tip.style.display = 'block';
-      clearTimeout(tip.timer);
-      tip.timer = setTimeout(()=>tip.style.display='none',2000);
-    }
-  </script>
 </body>
 </html>
+
 
 
 
