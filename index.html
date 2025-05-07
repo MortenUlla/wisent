@@ -1,62 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Wisent 3D Viewer</title>
+  <meta charset="UTF-8">
+  <title>Leopard 2A6 – Interaktiv 3D</title>
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: #111;
+    html, body { margin:0; height:100%; background:#111; }
+    #api-frame { width:100%; height:100%; border:none; }
+    #controls {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px; border-radius: 6px;
+      color: #fff; font-family: sans-serif;
     }
-    #api-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+    #controls button { margin: 4px; padding: 6px 12px; }
   </style>
 </head>
 <body>
 
-<!-- ✅ Sketchfab 3D Viewer iframe -->
-<iframe
-  id="api-frame"
-  src="https://sketchfab.com/models/45311f1c3626462784cd84ec40a82f4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1&ui_watermark=0"
-  allow="autoplay; fullscreen; xr-spatial-tracking"
-  allowfullscreen>
-</iframe>
+  <!-- 3D-viewer fra Sketchfab -->
+  <iframe id="api-frame"
+    src="https://sketchfab.com/models/b62ba39ae5584b768b53d58803c3cc4b/embed?api=1&autostart=1&ui_infos=0&ui_controls=1"
+    allow="autoplay; fullscreen"
+    allowfullscreen>
+  </iframe>
 
-<!-- ✅ Sketchfab Viewer API -->
-<script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
-<script>
-  const iframe = document.getElementById('api-frame');
-  const client = new Sketchfab(iframe);
+  <!-- Kontroll-panel -->
+  <div id="controls">
+    <button onclick="focusOn('turret')">Fokuser tårn</button>
+    <button onclick="toggleNode('hatch')">Åpne/lukk luke</button>
+    <button onclick="toggleNode('winch')">Vis/skjul vinsj</button>
+  </div>
 
-  client.init('45311f1c3626462784cd84ec40a82f4b', {
-    success: function (api) {
-      api.start();
-      api.addEventListener('viewerready', function () {
-        console.log('✅ Sketchfab-modellen er klar!');
+  <!-- Sketchfab Viewer API -->
+  <script src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.0.js"></script>
+  <script>
+    const iframe = document.getElementById('api-frame');
+    const client = new Sketchfab(iframe);
 
-        // Vis alle noder i konsoll
-        api.getNodeMap((err, nodes) => {
-          if (err) {
-            console.error('Feil ved henting av noder');
-          } else {
-            console.log('🧩 Deler i modellen:');
-            Object.values(nodes).forEach(n => console.log(n.name));
-          }
+    let apiInstance;
+    client.init('b62ba39ae5584b768b53d58803c3cc4b', {
+      success: (api) => {
+        apiInstance = api;
+        api.start(() => {
+          console.log('✅ Viewer klar!');
+          // Hent og logg node-liste én gang
+          api.getNodeMap((err, nodes) => {
+            if (!err) {
+              console.log('🧩 Noder:', Object.values(nodes).map(n=>n.name));
+            }
+          });
+        });
+      },
+      error: () => alert('❌ Kunne ikke laste 3D-modellen')
+    });
+
+    // Zoom/fokuser kamera på navngitt node (partial match)
+    function focusOn(partName) {
+      apiInstance.getNodeMap((err, nodes) => {
+        if (err) return;
+        const node = Object.values(nodes)
+          .find(n => n.name.toLowerCase().includes(partName));
+        if (!node) return alert('Fant ikke del: ' + partName);
+        apiInstance.lookAt(node.boundingBox.center, { animation: 1 });
+      });
+    }
+
+    // Vis/skjul navngitt node
+    function toggleNode(partName) {
+      apiInstance.getNodeMap((err, nodes) => {
+        if (err) return;
+        const node = Object.values(nodes)
+          .find(n => n.name.toLowerCase().includes(partName));
+        if (!node) return alert('Fant ikke del: ' + partName);
+        apiInstance.getVisibility(node.instanceID, (e, visible) => {
+          apiInstance.setVisibility(node.instanceID, !visible);
         });
       });
-    },
-    error: function () {
-      alert('❌ Klarte ikke å laste Sketchfab-modellen.');
     }
-  });
-</script>
+  </script>
 
 </body>
 </html>
+
 
 
 
